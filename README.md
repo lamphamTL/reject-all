@@ -12,10 +12,11 @@ Firefox-first WebExtension that rejects or removes privacy and cookie popups whe
 
 1. Open `about:debugging#/runtime/this-firefox`.
 2. Click `Load Temporary Add-on...`.
-3. Pick [`manifest.json`](/Users/lamp/.codex/worktrees/07eb/reject-all/manifest.json).
+3. Pick [`manifest.json`](/Users/lamp/Documents/Project/reject-all/manifest.json).
 
 ## Files
 
-- [`manifest.json`](/Users/lamp/.codex/worktrees/07eb/reject-all/manifest.json): Firefox-compatible extension manifest.
-- [`content-script.js`](/Users/lamp/.codex/worktrees/07eb/reject-all/content-script.js): DOM observer and popup rejection/removal logic.
-- [`content-styles.css`](/Users/lamp/.codex/worktrees/07eb/reject-all/content-styles.css): early CSS suppression for known consent containers.
+- [`manifest.json`](/Users/lamp/Documents/Project/reject-all/manifest.json): Firefox-compatible extension manifest.
+- [`rules/`](</Users/lamp/Documents/Project/reject-all/rules>): standalone selector and keyword lists loaded before the main content script.
+- [`content-script.js`](/Users/lamp/Documents/Project/reject-all/content-script.js): DOM observer and popup rejection/removal logic that reads from the rule files.
+- [`content-styles.css`](/Users/lamp/Documents/Project/reject-all/content-styles.css): early CSS suppression for known consent containers.

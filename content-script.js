@@ -1,85 +1,12 @@
 (() => {
-  const KNOWN_REJECT_SELECTORS = [
-    "#onetrust-reject-all-handler",
-    "#CybotCookiebotDialogBodyButtonDecline",
-    "#CybotCookiebotDialogBodyLevelButtonLevelOptinDeclineAll",
-    "#CybotCookiebotDialogBodyLevelButtonDecline",
-    "[id*='didomi-notice-disagree-button']",
-    ".didomi-notice-disagree-button",
-    ".qc-cmp2-summary-buttons button[mode='secondary']",
-    ".qc-cmp2-footer button[mode='secondary']",
-    "[id*='trustarc'] button[id*='reject']",
-    "[class*='trustarc'] button[class*='reject']"
-  ];
-
-  const KNOWN_ROOT_SELECTORS = [
-    "#onetrust-consent-sdk",
-    ".onetrust-pc-sdk",
-    ".ot-sdk-container",
-    "#CybotCookiebotDialog",
-    "#CookiebotWidget",
-    "#didomi-host",
-    "#didomi-popup",
-    ".didomi-popup-container",
-    "#qc-cmp2-container",
-    ".qc-cmp2-container",
-    "#truste-consent-track",
-    ".truste_overlay",
-    "[id^='sp_message_container']",
-    "[id*='cookiebanner']",
-    "[id*='cookie-banner']",
-    "[class*='cookie-banner']",
-    "[id*='consent-banner']",
-    "[class*='consent-banner']"
-  ];
-
-  const KNOWN_BACKDROP_SELECTORS = [
-    ".onetrust-pc-dark-filter",
-    ".ot-fade-in",
-    "[class*='didomi-overlay']",
-    "[class*='qc-cmp2-overlay']",
-    "[class*='trustarc'][class*='overlay']"
-  ];
-
-  const PRIVACY_KEYWORDS = [
-    "cookie",
-    "cookies",
-    "consent",
-    "privacy",
-    "gdpr",
-    "tracking",
-    "partners",
-    "vendors",
-    "legitimate interest",
-    "preference center",
-    "manage preferences",
-    "your choices",
-    "we value your privacy"
-  ];
-
-  const REJECT_KEYWORDS = [
-    "reject",
-    "reject all",
-    "decline",
-    "deny",
-    "refuse",
-    "refuser",
-    "tout refuser",
-    "continue without accepting",
-    "continuer sans accepter",
-    "necessary only",
-    "essential only",
-    "only necessary"
-  ];
-
-  const ACCEPT_KEYWORDS = [
-    "accept",
-    "allow",
-    "agree",
-    "accept all",
-    "allow all",
-    "i agree"
-  ];
+  const {
+    KNOWN_REJECT_SELECTORS = [],
+    KNOWN_ROOT_SELECTORS = [],
+    KNOWN_BACKDROP_SELECTORS = [],
+    PRIVACY_KEYWORDS = [],
+    REJECT_KEYWORDS = [],
+    ACCEPT_KEYWORDS = []
+  } = globalThis.RejectAllConfig ?? {};
 
   const INTERACTIVE_SELECTOR = [
     "button",

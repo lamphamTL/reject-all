@@ -18,6 +18,12 @@
         "<all_urls>"
       ],
       "js": [
+        "rules/reject-selectors.js",
+        "rules/root-selectors.js",
+        "rules/backdrop-selectors.js",
+        "rules/privacy-keywords.js",
+        "rules/reject-keywords.js",
+        "rules/accept-keywords.js",
         "content-script.js"
       ],
       "css": [

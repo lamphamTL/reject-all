@@ -9,15 +9,24 @@
       "strict_min_version": "109.0"
     }
   },
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
   "host_permissions": [
     "<all_urls>"
   ],
+  "action": {
+    "default_title": "Reject All",
+    "default_popup": "popup.html"
+  },
   "content_scripts": [
     {
       "matches": [
         "<all_urls>"
       ],
       "js": [
+        "site-settings.js",
         "rules/reject-selectors.js",
         "rules/root-selectors.js",
         "rules/backdrop-selectors.js",

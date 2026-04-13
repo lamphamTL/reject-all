@@ -1,22 +1,23 @@
-html.reject-all-unlocked,
-body.reject-all-unlocked {
+html.reject-all-active.reject-all-unlocked,
+body.reject-all-active.reject-all-unlocked {
   overflow: auto !important;
   overscroll-behavior: auto !important;
   pointer-events: auto !important;
 }
 
-#onetrust-consent-sdk,
-.onetrust-pc-dark-filter,
-.onetrust-pc-sdk,
-#CybotCookiebotDialog,
-#CookiebotWidget,
-#didomi-host,
-#didomi-popup,
-.didomi-popup-container,
-#qc-cmp2-container,
-.qc-cmp2-container,
-#truste-consent-track,
-.truste_overlay {
+html.reject-all-active #onetrust-consent-sdk,
+html.reject-all-active .fig-consent-banner,
+html.reject-all-active .onetrust-pc-dark-filter,
+html.reject-all-active .onetrust-pc-sdk,
+html.reject-all-active #CybotCookiebotDialog,
+html.reject-all-active #CookiebotWidget,
+html.reject-all-active #didomi-host,
+html.reject-all-active #didomi-popup,
+html.reject-all-active .didomi-popup-container,
+html.reject-all-active #qc-cmp2-container,
+html.reject-all-active .qc-cmp2-container,
+html.reject-all-active #truste-consent-track,
+html.reject-all-active .truste_overlay {
   opacity: 0 !important;
   visibility: hidden !important;
   pointer-events: none !important;

@@ -1,6 +1,7 @@
 globalThis.RejectAllConfig = globalThis.RejectAllConfig || {};
 
 globalThis.RejectAllConfig.KNOWN_ROOT_SELECTORS = Object.freeze([
+  ".fig-consent-banner",
   "#onetrust-consent-sdk",
   ".onetrust-pc-sdk",
   ".ot-sdk-container",

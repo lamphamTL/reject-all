@@ -1,4 +1,6 @@
 (() => {
+  const settingsApi = globalThis.RejectAllSiteSettings;
+  const extensionApi = globalThis.browser;
   const {
     KNOWN_REJECT_SELECTORS = [],
     KNOWN_ROOT_SELECTORS = [],
@@ -18,10 +20,12 @@
 
   const clickedElements = new WeakSet();
   const removedElements = new WeakSet();
+  let extensionEnabled = false;
+  let observing = false;
   let scheduled = false;
 
   function scheduleSweep() {
-    if (scheduled) {
+    if (!extensionEnabled || scheduled) {
       return;
     }
 
@@ -33,6 +37,10 @@
   }
 
   function sweep() {
+    if (!extensionEnabled) {
+      return;
+    }
+
     let changed = false;
 
     for (let index = 0; index < 6; index += 1) {
@@ -308,19 +316,93 @@
   }
 
   const observer = new MutationObserver(() => {
+    syncDocumentClasses();
     scheduleSweep();
   });
 
-  observer.observe(document.documentElement, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ["class", "style", "hidden", "open", "aria-hidden"]
-  });
+  function syncDocumentClasses() {
+    for (const element of [document.documentElement, document.body]) {
+      if (!(element instanceof HTMLElement)) {
+        continue;
+      }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", scheduleSweep, { once: true });
+      element.classList.toggle("reject-all-active", extensionEnabled);
+
+      if (!extensionEnabled) {
+        element.classList.remove("reject-all-unlocked");
+      }
+    }
   }
 
-  scheduleSweep();
+  function startObserver() {
+    if (observing || !(document.documentElement instanceof HTMLElement)) {
+      return;
+    }
+
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "style", "hidden", "open", "aria-hidden"]
+    });
+    observing = true;
+  }
+
+  function stopObserver() {
+    if (!observing) {
+      return;
+    }
+
+    observer.disconnect();
+    observing = false;
+  }
+
+  function applyEnabledState(nextEnabled) {
+    extensionEnabled = Boolean(nextEnabled);
+    syncDocumentClasses();
+
+    if (extensionEnabled) {
+      startObserver();
+      scheduleSweep();
+      return;
+    }
+
+    stopObserver();
+  }
+
+  async function initializeEnabledState() {
+    if (!settingsApi) {
+      applyEnabledState(true);
+      return;
+    }
+
+    const settings = await settingsApi.getSettings();
+    applyEnabledState(settingsApi.isEnabledForWindow(settings, window));
+  }
+
+  if (settingsApi && extensionApi?.storage?.onChanged) {
+    extensionApi.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== "local" || !(settingsApi.STORAGE_KEY in changes)) {
+        return;
+      }
+
+      const nextSettings = settingsApi.normalizeSettings(changes[settingsApi.STORAGE_KEY].newValue);
+      applyEnabledState(settingsApi.isEnabledForWindow(nextSettings, window));
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener(
+      "DOMContentLoaded",
+      () => {
+        syncDocumentClasses();
+        scheduleSweep();
+      },
+      { once: true }
+    );
+  }
+
+  initializeEnabledState().catch(() => {
+    applyEnabledState(true);
+  });
 })();

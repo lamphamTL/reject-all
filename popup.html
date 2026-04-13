@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Reject All</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup">
+      <section class="panel">
+        <p class="eyebrow">Current Site</p>
+        <h1 id="current-site" class="site-name">Loading...</h1>
+        <label class="toggle">
+          <input id="site-enabled" type="checkbox" disabled>
+          <span>Enabled on this site</span>
+        </label>
+        <p class="hint">Changing this setting reloads the current page.</p>
+        <p id="unsupported-message" class="message" hidden></p>
+      </section>
+
+      <section class="panel">
+        <p class="eyebrow">Disabled Sites</p>
+        <ul id="disabled-sites" class="site-list"></ul>
+        <p id="empty-state" class="hint">No site-specific overrides yet.</p>
+      </section>
+    </main>
+
+    <script src="site-settings.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,23 @@
+html.reject-all-unlocked,
+body.reject-all-unlocked {
+  overflow: auto !important;
+  overscroll-behavior: auto !important;
+  pointer-events: auto !important;
+}
+
+#onetrust-consent-sdk,
+.onetrust-pc-dark-filter,
+.onetrust-pc-sdk,
+#CybotCookiebotDialog,
+#CookiebotWidget,
+#didomi-host,
+#didomi-popup,
+.didomi-popup-container,
+#qc-cmp2-container,
+.qc-cmp2-container,
+#truste-consent-track,
+.truste_overlay {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

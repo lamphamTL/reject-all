@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Reject All",
+  "version": "0.1.0",
+  "description": "Firefox-first extension that rejects or removes privacy and cookie popups as they appear.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "reject-all@local.extension",
+      "strict_min_version": "109.0"
+    }
+  },
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content-script.js"
+      ],
+      "css": [
+        "content-styles.css"
+      ],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ]
+}

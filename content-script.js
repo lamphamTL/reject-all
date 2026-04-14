@@ -7,7 +7,8 @@
     KNOWN_BACKDROP_SELECTORS = [],
     PRIVACY_KEYWORDS = [],
     REJECT_KEYWORDS = [],
-    ACCEPT_KEYWORDS = []
+    ACCEPT_KEYWORDS = [],
+    SITE_RULES = {}
   } = globalThis.RejectAllConfig ?? {};
 
   const INTERACTIVE_SELECTOR = [
@@ -20,9 +21,98 @@
 
   const clickedElements = new WeakSet();
   const removedElements = new WeakSet();
+  const activeSiteRule = resolveSiteRule();
+  const sitePreferredAction = getSitePreferredAction(activeSiteRule);
+  const siteClickSelectors = getSiteClickSelectors(activeSiteRule, sitePreferredAction);
+  const siteRootSelectors = getSiteSelectors(activeSiteRule, ["popupRoot", "rootSelectors"]);
+  const siteBackdropSelectors = getSiteSelectors(activeSiteRule, ["backdrop", "backdropSelectors"]);
   let extensionEnabled = false;
   let observing = false;
   let scheduled = false;
+  let siteSpecificStyleElement = null;
+
+  function resolveSiteRule(targetWindow = window) {
+    const siteHosts = settingsApi?.getSiteHosts ? settingsApi.getSiteHosts(targetWindow) : [targetWindow?.location?.hostname ?? ""];
+    let matchedRule = null;
+    let matchedHostLength = -1;
+
+    for (const [hostKey, rule] of Object.entries(SITE_RULES)) {
+      const normalizedHostKey = normalizeHostname(hostKey);
+
+      if (!normalizedHostKey) {
+        continue;
+      }
+
+      if (siteHosts.some((hostname) => matchesHostSuffix(hostname, normalizedHostKey)) && normalizedHostKey.length > matchedHostLength) {
+        matchedRule = rule;
+        matchedHostLength = normalizedHostKey.length;
+      }
+    }
+
+    return matchedRule;
+  }
+
+  function normalizeHostname(hostname) {
+    if (settingsApi?.normalizeHostname) {
+      return settingsApi.normalizeHostname(hostname);
+    }
+
+    return typeof hostname === "string" ? hostname.trim().toLowerCase() : "";
+  }
+
+  function matchesHostSuffix(hostname, suffix) {
+    const normalizedHost = normalizeHostname(hostname);
+
+    return normalizedHost === suffix || normalizedHost.endsWith(`.${suffix}`);
+  }
+
+  function getSiteSelectors(rule, fieldNames) {
+    if (!rule) {
+      return [];
+    }
+
+    const selectors = [];
+
+    for (const fieldName of fieldNames) {
+      const value = rule[fieldName];
+      const values = Array.isArray(value) ? value : [value];
+
+      for (const candidate of values) {
+        if (typeof candidate !== "string") {
+          continue;
+        }
+
+        const selector = candidate.trim();
+        if (selector) {
+          selectors.push(selector);
+        }
+      }
+    }
+
+    return Array.from(new Set(selectors));
+  }
+
+  function getSitePreferredAction(rule) {
+    const preferredAction = rule?.preferredAction;
+
+    if (preferredAction === "continueWithoutAccepting" || preferredAction === "removePopup") {
+      return preferredAction;
+    }
+
+    return "rejectAllButton";
+  }
+
+  function getSiteClickSelectors(rule, preferredAction) {
+    if (!rule || preferredAction === "removePopup") {
+      return [];
+    }
+
+    if (preferredAction === "continueWithoutAccepting") {
+      return getSiteSelectors(rule, ["continueWithoutAccepting", "rejectAllButton", "rejectButton", "clickSelectors"]);
+    }
+
+    return getSiteSelectors(rule, ["rejectAllButton", "rejectButton", "continueWithoutAccepting", "clickSelectors"]);
+  }
 
   function scheduleSweep() {
     if (!extensionEnabled || scheduled) {
@@ -75,14 +165,25 @@
     const roots = getSearchRoots();
 
     for (const root of roots) {
+      for (const selector of siteClickSelectors) {
+        const element = querySelectorSafe(root, selector);
+        if (isConfiguredClickableTarget(element)) {
+          return element;
+        }
+      }
+
+      if (sitePreferredAction === "removePopup") {
+        continue;
+      }
+
       for (const selector of KNOWN_REJECT_SELECTORS) {
-        const element = root.querySelector(selector);
+        const element = querySelectorSafe(root, selector);
         if (isClickableRejectButton(element)) {
           return element;
         }
       }
 
-      const candidates = root.querySelectorAll(INTERACTIVE_SELECTOR);
+      const candidates = querySelectorAllSafe(root, INTERACTIVE_SELECTOR);
       for (const candidate of candidates) {
         if (isClickableRejectButton(candidate)) {
           return candidate;
@@ -95,17 +196,29 @@
 
   function collectPrivacyRoots() {
     const matches = new Set();
+    const roots = getSearchRoots();
 
-    for (const root of getSearchRoots()) {
+    for (const root of roots) {
+      for (const selector of siteRootSelectors) {
+        querySelectorAllSafe(root, selector).forEach((element) => {
+          if (isConfiguredRemovableElement(element)) {
+            matches.add(element);
+          }
+        });
+      }
+    }
+
+    for (const root of roots) {
       for (const selector of KNOWN_ROOT_SELECTORS) {
-        root.querySelectorAll(selector).forEach((element) => {
+        querySelectorAllSafe(root, selector).forEach((element) => {
           if (isRemovablePrivacyRoot(element)) {
             matches.add(element);
           }
         });
       }
 
-      root.querySelectorAll(
+      querySelectorAllSafe(
+        root,
         "[role='dialog'], dialog, [aria-modal='true'], [id*='cookie'], [class*='cookie'], [id*='consent'], [class*='consent'], [id*='privacy'], [class*='privacy'], [id*='gdpr'], [class*='gdpr']"
       ).forEach((element) => {
         if (isRemovablePrivacyRoot(element)) {
@@ -119,17 +232,28 @@
 
   function collectBackdrops() {
     const matches = new Set();
+    const roots = getSearchRoots();
 
-    for (const root of getSearchRoots()) {
+    for (const root of roots) {
+      for (const selector of siteBackdropSelectors) {
+        querySelectorAllSafe(root, selector).forEach((element) => {
+          if (isConfiguredRemovableElement(element)) {
+            matches.add(element);
+          }
+        });
+      }
+    }
+
+    for (const root of roots) {
       for (const selector of KNOWN_BACKDROP_SELECTORS) {
-        root.querySelectorAll(selector).forEach((element) => {
+        querySelectorAllSafe(root, selector).forEach((element) => {
           if (isVisibleElement(element)) {
             matches.add(element);
           }
         });
       }
 
-      root.querySelectorAll("[class*='overlay'], [class*='backdrop'], [id*='overlay'], [id*='backdrop']").forEach((element) => {
+      querySelectorAllSafe(root, "[class*='overlay'], [class*='backdrop'], [id*='overlay'], [id*='backdrop']").forEach((element) => {
         if (isPrivacyBackdrop(element)) {
           matches.add(element);
         }
@@ -152,6 +276,10 @@
     return isInsidePrivacyContext(element);
   }
 
+  function isConfiguredClickableTarget(element) {
+    return element instanceof HTMLElement && !clickedElements.has(element) && isVisibleElement(element);
+  }
+
   function isInsidePrivacyContext(element) {
     let current = element;
 
@@ -160,7 +288,7 @@
         break;
       }
 
-      if (matchesKnownSelector(current, KNOWN_ROOT_SELECTORS) || hasPrivacyVocabulary(current)) {
+      if (matchesKnownSelector(current, siteRootSelectors) || matchesKnownSelector(current, KNOWN_ROOT_SELECTORS) || hasPrivacyVocabulary(current)) {
         return true;
       }
 
@@ -191,6 +319,10 @@
     const tallEnough = rect.height >= 48;
 
     return dialogLike && wideEnough && tallEnough && interactiveCount > 0;
+  }
+
+  function isConfiguredRemovableElement(element) {
+    return element instanceof HTMLElement && !removedElements.has(element) && element.isConnected;
   }
 
   function isPrivacyBackdrop(element) {
@@ -239,7 +371,7 @@
   }
 
   function matchesKnownSelector(element, selectors) {
-    return selectors.some((selector) => element.matches(selector));
+    return selectors.some((selector) => matchesSafe(element, selector));
   }
 
   function removeElement(element) {
@@ -304,7 +436,7 @@
 
   function getSearchRoots() {
     const roots = [document];
-    const openShadowRoots = document.querySelectorAll("*");
+    const openShadowRoots = querySelectorAllSafe(document, "*");
 
     for (const element of openShadowRoots) {
       if (element.shadowRoot) {
@@ -313,6 +445,30 @@
     }
 
     return roots;
+  }
+
+  function querySelectorSafe(root, selector) {
+    try {
+      return root.querySelector(selector);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function querySelectorAllSafe(root, selector) {
+    try {
+      return Array.from(root.querySelectorAll(selector));
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function matchesSafe(element, selector) {
+    try {
+      return element.matches(selector);
+    } catch (error) {
+      return false;
+    }
   }
 
   const observer = new MutationObserver(() => {
@@ -332,6 +488,49 @@
         element.classList.remove("reject-all-unlocked");
       }
     }
+
+    syncSiteSpecificStyles();
+  }
+
+  function syncSiteSpecificStyles() {
+    const styleText = extensionEnabled ? getSiteSpecificStyleText() : "";
+
+    if (!styleText) {
+      siteSpecificStyleElement?.remove();
+      siteSpecificStyleElement = null;
+      return;
+    }
+
+    const parent = document.head || document.documentElement;
+    if (!(parent instanceof HTMLElement)) {
+      return;
+    }
+
+    if (!siteSpecificStyleElement || !siteSpecificStyleElement.isConnected) {
+      siteSpecificStyleElement = document.createElement("style");
+      siteSpecificStyleElement.id = "reject-all-site-rules";
+      parent.prepend(siteSpecificStyleElement);
+    }
+
+    if (siteSpecificStyleElement.textContent !== styleText) {
+      siteSpecificStyleElement.textContent = styleText;
+    }
+  }
+
+  function getSiteSpecificStyleText() {
+    if (sitePreferredAction !== "removePopup") {
+      return "";
+    }
+
+    const selectors = Array.from(new Set([...siteRootSelectors, ...siteBackdropSelectors]));
+
+    if (selectors.length === 0) {
+      return "";
+    }
+
+    const scopedSelectors = selectors.map((selector) => `html.reject-all-active ${selector}`);
+
+    return `${scopedSelectors.join(",\n")} {\n  opacity: 0 !important;\n  visibility: hidden !important;\n  pointer-events: none !important;\n}`;
   }
 
   function startObserver() {

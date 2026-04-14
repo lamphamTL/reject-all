@@ -27,6 +27,7 @@
       ],
       "js": [
         "site-settings.js",
+        "site-rules.js",
         "rules/reject-selectors.js",
         "rules/root-selectors.js",
         "rules/backdrop-selectors.js",
